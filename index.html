@@ -36,13 +36,14 @@
   .editbig:hover{border-bottom-color:var(--mid)}
 
   /* small transparent cooling graph, beneath the cup */
-  .minigraph{position:absolute; left:50%; transform:translateX(-50%); bottom:130px; width:min(72%,380px); text-align:center}
+  .minigraph{position:absolute; left:50%; transform:translateX(-50%); bottom:111px; width:min(72%,380px); text-align:center}
   #chart{width:100%; height:100px; display:block}
   .miniwin{margin:6px 2px 0; font-size:12px; line-height:1.4; color:#000; text-align:center; text-shadow:0 1px 8px rgba(255,255,255,.98),0 0 14px rgba(255,255,255,.95)}
   .miniwin b{font-weight:600}
   .minihead{margin:0 2px 3px; font-size:11px; color:#000; text-align:center; letter-spacing:.02em; text-shadow:0 1px 8px rgba(255,255,255,.98),0 0 14px rgba(255,255,255,.95)}
 
-  .pop{position:absolute; right:16px; top:78px; z-index:5; background:transparent; padding:0; text-align:right; width:min(320px,74vw)}
+  .pop{position:absolute; right:20px; top:102px; z-index:5; background:transparent; padding:0; text-align:right; width:min(320px,74vw)}
+  #popTemp,#popVol{width:min(210px,58vw)}
   .seg{display:flex; gap:6px; justify-content:flex-end}
   .seg.fill{justify-content:space-between; width:100%}
   .seg button{font-family:var(--body); font-size:12.5px; padding:6px 9px; background:transparent; border:0; color:var(--mid); text-shadow:0 1px 7px rgba(255,255,255,.9); border-radius:8px; cursor:pointer}
@@ -72,7 +73,7 @@
     </div>
 
     <div class="readout">
-      <div class="t"><button class="editbig" id="editTemp" aria-label="Set the coffee temperature"><span id="tempVal">87</span><sup>&deg;</sup></button></div>
+      <div class="t"><button class="editbig" id="editTemp" aria-label="Set the coffee temperature"><span id="tempVal">78</span><sup>&deg;</sup></button></div>
       <div class="sub"><button class="edit" id="editMilk">whole milk</button> &middot; <button class="edit" id="editCup">ceramic</button> &middot; <button class="edit" id="editVol">250 mL</button></div>
     </div>
 
@@ -87,7 +88,7 @@
     </div>
     <div class="pop" id="popTemp" hidden>
       <label class="poplabel">Temperature now</label>
-      <input type="range" id="temp" min="45" max="98" step="1" value="87">
+      <input type="range" id="temp" min="45" max="80" step="1" value="78">
     </div>
     <div class="pop" id="popVol" hidden>
       <label class="poplabel">Volume</label>
@@ -134,7 +135,7 @@ function flows(T,tRoom,v){
   const evap=P.L*hM*g.aTop*drive;
   return{total:conv+rad+evap,mass:g.mass};
 }
-const cfg={material:"ceramic",vol:250,t0:87,tr:21,milkType:"whole"};
+const cfg={material:"ceramic",vol:250,t0:78,tr:21,milkType:"whole"};
 let bl=null;
 function baseline(){if(bl)return bl;let T=cfg.t0,v=cfg.vol,t=0;const out=[{t:0,T}],dt=15;
   while(t<DUR){const f=flows(T,cfg.tr,v);T+=-(f.total)/(f.mass*P.C)*dt;t+=dt;out.push({t,T});}bl=out;return out;}
@@ -165,7 +166,7 @@ function drawSteam(ms){
 function drawChart(){
   const W=chR.width,H=chR.height,x=chX;x.clearRect(0,0,W,H);
   const mL=10,mR=10,mT=12,mB=20,pw=W-mL-mR,ph=H-mT-mB;
-  const tmax=DUR/60,ymin=40,ymax=Math.max(92,cfg.t0+3);
+  const tmax=DUR/60,ymin=40,ymax=Math.max(84,cfg.t0+3);
   const X=t=>mL+(t/tmax)*pw,Y=v=>mT+(1-(v-ymin)/(ymax-ymin))*ph;
   const b=baseline(),w=drinkWindow();
   // the "just right" band is the answer the chart exists to give
