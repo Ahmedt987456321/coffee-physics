@@ -341,6 +341,14 @@ function drawChart(){
     const last=history[history.length-1];
     x.beginPath();x.arc(X(last.t/60),Y(last.T),3.5,0,7);x.fillStyle=tempColor(last.T);x.fill();
   }
+  // mark where it becomes ready to drink and where it goes cold
+  const win=drinkWindow();
+  const mark=(t,Tv,label,align)=>{ if(t==null)return; const xx=X(t/60),yy=Y(Tv);
+    x.beginPath();x.arc(xx,yy,3,0,7);x.fillStyle="#4b4945";x.fill();
+    x.font="600 10px system-ui,sans-serif";x.fillStyle="#4b4945";x.textBaseline="bottom";x.textAlign=align;
+    x.fillText(label, align==="left"?xx+6:xx-6, yy-5); };
+  mark(win.ready,DRINK_HI,"ready","left");
+  mark(win.cold,DRINK_LO,"gone cold","right");
   const hx=X(goal.m),hy=Y(goal.T);
   x.strokeStyle="rgba(75,73,69,.22)";x.setLineDash([2,3]);x.lineWidth=1;
   x.beginPath();x.moveTo(mL,hy);x.lineTo(W-mR,hy);x.stroke();x.setLineDash([]);
