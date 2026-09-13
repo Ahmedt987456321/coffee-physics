@@ -30,8 +30,8 @@
   .temps{display:flex; gap:18px; justify-content:flex-end; align-items:baseline}
   .tval{font:inherit; background:none; border:0; padding:0; cursor:pointer; color:var(--ink); font-weight:200; font-size:clamp(30px,3.6vw,44px); letter-spacing:-.02em; font-variant-numeric:tabular-nums; text-shadow:0 2px 22px rgba(255,255,255,.5); border-bottom:1px dashed var(--faint); line-height:1}
   .tval:hover{border-bottom-color:var(--mid)}
-  .tval sup{font-size:.32em; font-weight:400; color:var(--mid); vertical-align:super; top:-.9em}
-  .tval em{font-style:normal; font-size:.30em; font-weight:600; color:var(--mid); letter-spacing:.06em; margin-left:2px; vertical-align:baseline}
+  .tval sup{font-size:.34em; font-weight:400; color:var(--mid); vertical-align:super; top:-.9em}
+  .tval em{font-style:normal; font-size:.44em; font-weight:600; color:var(--mid); letter-spacing:.04em; margin-left:3px; vertical-align:baseline}
   .readout .sub{font-size:12px; color:var(--mid); margin-top:10px}
   .edit{font:inherit; color:var(--ink); background:none; border:0; padding:0 0 1px; cursor:pointer; border-bottom:1px dashed var(--faint)}
   .edit:hover{border-bottom-color:var(--mid)}
@@ -100,7 +100,7 @@
     </div>
     <div class="pop" id="popPref" hidden>
       <label class="poplabel">Temperature you like</label>
-      <input type="range" id="pref" min="45" max="70" step="1" value="60">
+      <input type="range" id="pref" min="30" max="70" step="1" value="60">
     </div>
     <div class="pop" id="popVol" hidden>
       <label class="poplabel">Volume</label>
