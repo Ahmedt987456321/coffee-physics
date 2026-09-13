@@ -233,16 +233,14 @@ const MAT_WHY={ceramic:"Ceramic holds heat moderately, the everyday cup.",glass:
 const DRINK_LO=55, DRINK_HI=65;   // the pleasant sipping range (degrees C)
 // milk types: c = specific heat (kJ/kg/K), rho = density (g/mL), maxHeat = scald/curdle limit
 const MILK={
-  whole:{c:3.85,rho:1.03,maxHeat:70,desc:"rich and creamy, ~3.5% fat",breaks:"skins and scalds"},
-  skim:{c:3.97,rho:1.035,maxHeat:70,desc:"fat-free, froths easily",breaks:"scalds"},
-  oat:{c:3.90,rho:1.05,maxHeat:65,desc:"smooth, plant-based",breaks:"can split"},
-  almond:{c:4.00,rho:1.02,maxHeat:65,desc:"thin, plant-based",breaks:"curdles easily"},
-  soya:{c:3.90,rho:1.03,maxHeat:70,desc:"protein-rich, plant-based",breaks:"curdles"}
+  whole:{c:3.85,rho:1.03,maxHeat:70,desc:"rich and creamy",breaks:"skins"},
+  skim:{c:3.97,rho:1.035,maxHeat:70,desc:"light, froths well",breaks:"scalds"},
+  oat:{c:3.90,rho:1.05,maxHeat:65,desc:"smooth, plant-based",breaks:"splits"},
+  almond:{c:4.00,rho:1.02,maxHeat:65,desc:"thin, plant-based",breaks:"curdles"},
+  soya:{c:3.90,rho:1.03,maxHeat:70,desc:"protein-rich",breaks:"curdles"}
 };
 function milkInfo(mk){const m=MILK[mk],cap=mk[0].toUpperCase()+mk.slice(1);
-  return `<b>${cap} milk</b> &middot; ${m.desc}.<br>`+
-    `Heat to <b>${m.maxHeat}°C</b> at most, then it ${m.breaks}.<br>`+
-    `Holds heat at <b>${m.c} kJ/kg·K</b>; it cools by radiation and evaporation much like water, since milk is mostly water.`;}
+  return `<b>${cap} milk</b> &middot; ${m.desc}. Max <b>${m.maxHeat}°</b> before it ${m.breaks}.`;}
 const psatPa=t=>1000*0.61078*Math.exp(17.27*t/(t+237.3));
 const rhoVap=t=>psatPa(t)*P.M/(P.R*(t+273.15));
 let horizon=1800;
