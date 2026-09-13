@@ -120,7 +120,7 @@
 
     <button class="cuphit" id="cupHit" aria-label="Show how the coffee cools"></button>
     <div class="taphint" id="tapHint">tap the cup</div>
-    <div class="ver">v7</div>
+    <div class="ver">v8</div>
   </div>
 
 <script>
@@ -171,11 +171,11 @@ function tempColor(T){const s=[[28,[176,173,168]],[50,[150,148,143]],[68,[110,10
 const CX=0.51,CY=0.47,RX=0.08;
 function drawSteam(ms){
   const W=stR.width,H=stR.height,x=sx;x.clearRect(0,0,W,H);
-  const cupW=RX*W*2,bx0=CX*W,by=0.435*H,n=3,unit=cupW*0.17;
-  for(let p=0;p<n;p++){const bx=bx0+(p-(n-1)/2)*(cupW*0.34),seed=p*10.7;
+  const cupW=RX*W*2,bx0=CX*W,by=0.44*H,n=2,unit=cupW*0.14;
+  for(let p=0;p<n;p++){const bx=bx0+(p-(n-1)/2)*(cupW*0.28),seed=p*10.7;
     for(let layer=0;layer<2;layer++){x.beginPath();
-      for(let i=0;i<=14;i++){const yy=by-i*unit,ph=ms*0.00015+i*0.33+seed,sway=Math.sin(ph)*(cupW*0.06+i*cupW*0.02)+Math.sin(ph*1.9+seed)*cupW*0.04;i?x.lineTo(bx+sway,yy):x.moveTo(bx+sway,yy);}
-      x.strokeStyle=`rgba(255,255,255,${layer?0.04:0.06})`;x.lineWidth=layer?cupW*0.5:cupW*0.26;x.lineCap="round";x.shadowColor="rgba(255,255,255,.5)";x.shadowBlur=cupW*0.4;x.stroke();}}
+      for(let i=0;i<=8;i++){const yy=by-i*unit,ph=ms*0.00013+i*0.33+seed,sway=Math.sin(ph)*(cupW*0.04+i*cupW*0.012)+Math.sin(ph*1.9+seed)*cupW*0.025;i?x.lineTo(bx+sway,yy):x.moveTo(bx+sway,yy);}
+      x.strokeStyle=`rgba(255,255,255,${layer?0.03:0.045})`;x.lineWidth=layer?cupW*0.42:cupW*0.22;x.lineCap="round";x.shadowColor="rgba(255,255,255,.5)";x.shadowBlur=cupW*0.35;x.stroke();}}
   x.shadowBlur=0;
 }
 function drawChart(){
