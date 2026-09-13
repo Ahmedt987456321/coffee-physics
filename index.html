@@ -33,10 +33,10 @@
   .edit{font:inherit; color:var(--ink); background:none; border:0; padding:0 0 1px; cursor:pointer; border-bottom:1px dashed var(--faint)}
   .edit:hover{border-bottom-color:var(--mid)}
 
-  /* small transparent cooling graph, top-left under the title */
-  .minigraph{position:absolute; left:20px; top:48px; width:min(56%,300px)}
-  #chart{width:100%; height:118px; display:block}
-  .miniwin{margin:6px 2px 0; font-size:12px; line-height:1.4; color:var(--ink); text-shadow:0 1px 8px rgba(255,255,255,.95)}
+  /* small transparent cooling graph, beneath the cup */
+  .minigraph{position:absolute; left:50%; transform:translateX(-50%); bottom:16px; width:min(72%,380px); text-align:center}
+  #chart{width:100%; height:100px; display:block}
+  .miniwin{margin:6px 2px 0; font-size:12px; line-height:1.4; color:var(--ink); text-align:center; text-shadow:0 1px 8px rgba(255,255,255,.98),0 0 14px rgba(255,255,255,.9)}
   .miniwin b{font-weight:600}
 
   .pop{position:absolute; right:16px; top:78px; z-index:5; background:transparent; padding:0; text-align:right; width:min(320px,74vw)}
@@ -156,25 +156,31 @@ function drawSteam(ms){
 }
 function drawChart(){
   const W=chR.width,H=chR.height,x=chX;x.clearRect(0,0,W,H);
-  const mL=6,mR=30,mT=8,mB=15,pw=W-mL-mR,ph=H-mT-mB;
-  const tmax=DUR/60,ymin=Math.min(cfg.tr-3,40),ymax=94;
+  const mL=10,mR=10,mT=12,mB=20,pw=W-mL-mR,ph=H-mT-mB;
+  const tmax=DUR/60,ymin=40,ymax=92;
   const X=t=>mL+(t/tmax)*pw,Y=v=>mT+(1-(v-ymin)/(ymax-ymin))*ph;
-  x.fillStyle="rgba(75,73,69,.10)";x.fillRect(mL,Y(DRINK_HI),pw,Y(DRINK_LO)-Y(DRINK_HI));
-  x.fillStyle="#8f8d88";x.font="9px system-ui,sans-serif";x.textAlign="left";x.textBaseline="middle";x.fillText("just right",mL+3,(Y(DRINK_HI)+Y(DRINK_LO))/2);
-  const b=baseline();
-  const grad=x.createLinearGradient(0,Y(90),0,Y(30));grad.addColorStop(0,"#46443f");grad.addColorStop(.5,"#7d7b76");grad.addColorStop(1,"#adaba6");
-  x.strokeStyle=grad;x.lineWidth=2.2;x.lineJoin="round";x.beginPath();
+  const b=baseline(),w=drinkWindow();
+  // the "just right" band is the answer the chart exists to give
+  x.fillStyle="rgba(60,58,54,.11)";x.fillRect(mL,Y(DRINK_HI),pw,Y(DRINK_LO)-Y(DRINK_HI));
+  x.fillStyle="#6c6a66";x.font="10px system-ui,sans-serif";x.textAlign="left";x.textBaseline="middle";
+  x.fillText("just right",mL+4,(Y(DRINK_HI)+Y(DRINK_LO))/2);
+  // full cooling curve, faint
+  x.strokeStyle="rgba(92,90,85,.42)";x.lineWidth=2;x.lineJoin="round";x.lineCap="round";x.beginPath();
   b.forEach((p,i)=>{const xx=X(p.t/60),yy=Y(p.T);i?x.lineTo(xx,yy):x.moveTo(xx,yy);});x.stroke();
-  const w=drinkWindow();
+  // the stretch when it is good to drink, bold
+  if(w.ready!=null){x.strokeStyle="#3b3a37";x.lineWidth=3.2;x.beginPath();let on=false;
+    for(const p of b){if(p.t>=w.ready&&(w.cold==null||p.t<=w.cold)){const xx=X(p.t/60),yy=Y(p.T);on?x.lineTo(xx,yy):x.moveTo(xx,yy);on=true;}}x.stroke();}
+  // where it becomes ready and where it goes cold
   const mark=(t,Tv,label,align)=>{if(t==null)return;const xx=X(t/60),yy=Y(Tv);
-    x.beginPath();x.arc(xx,yy,3,0,7);x.fillStyle="#4b4945";x.fill();
-    x.font="600 9px system-ui,sans-serif";x.fillStyle="#4b4945";x.textBaseline="bottom";x.textAlign=align;
-    x.fillText(label,align==="left"?xx+5:xx-5,yy-4);};
+    x.beginPath();x.arc(xx,yy,3.4,0,7);x.fillStyle="#3b3a37";x.fill();x.strokeStyle="#fff";x.lineWidth=1.3;x.stroke();
+    x.font="600 10px system-ui,sans-serif";x.fillStyle="#3b3a37";x.textBaseline="bottom";x.textAlign=align;
+    x.fillText(label,align==="left"?xx+6:xx-6,yy-5);};
   mark(w.ready,DRINK_HI,"ready","left");
   mark(w.cold,DRINK_LO,"cold","right");
-  x.font="9px system-ui,sans-serif";x.fillStyle="#b3b0aa";x.textAlign="left";x.textBaseline="middle";
-  x.fillText(ymax+"°",W-mR+4,Y(ymax)+3);x.fillText(Math.round(ymin)+"°",W-mR+4,Y(ymin)-3);
-  x.textAlign="center";x.textBaseline="top";x.fillText("now",X(0)+5,H-mB+3);x.fillText("30 min",X(tmax),H-mB+3);
+  // time axis
+  x.fillStyle="#8f8d88";x.font="10px system-ui,sans-serif";x.textBaseline="top";
+  x.textAlign="left";x.fillText("now",X(0),H-mB+4);
+  x.textAlign="right";x.fillText("30 min",X(tmax),H-mB+4);
 }
 function updateWin(){const w=drinkWindow();
   $("win").innerHTML = w.ready==null ? "Still too hot after 30 minutes."
