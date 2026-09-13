@@ -55,6 +55,7 @@
   .edit:hover{border-bottom-color:var(--mid)}
   .pop{position:absolute; right:16px; top:78px; z-index:5; background:transparent; padding:0; line-height:1.3; text-align:right; width:min(330px,74vw)}
   .pop .seg{gap:4px; justify-content:flex-end; flex-wrap:nowrap}
+  .pop .seg.fill{justify-content:space-between; width:100%}
   .pop .seg button{flex:0 1 auto; padding:6px 9px; font-size:12.5px; background:transparent; border:0; box-shadow:none; color:var(--mid); text-shadow:0 1px 7px rgba(255,255,255,.9); border-radius:8px}
   .pop .seg button[aria-pressed="true"]{color:var(--ink); font-weight:700; background:rgba(255,255,255,.4)}
   .pop .why{margin-top:8px; font-size:11.5px; color:var(--ink); text-shadow:0 1px 8px rgba(255,255,255,.95),0 0 12px rgba(255,255,255,.7)}
@@ -165,17 +166,16 @@
         <p class="why" id="matWhy">Ceramic holds heat moderately, the everyday cup.</p>
       </div>
       <div class="pop box" id="popVol" hidden>
-        <label class="poplabel">Volume <span id="volV">250 mL</span></label>
+        <label class="poplabel">Volume</label>
         <input type="range" id="vol" min="120" max="400" step="10" value="250">
       </div>
       <div class="pop" id="popMilk" hidden>
-        <div class="poptitle">Milk</div>
-        <div class="seg" id="milkTypeSeg">
+        <div class="seg fill" id="milkTypeSeg">
           <button data-mk="whole" aria-pressed="true">Whole</button>
           <button data-mk="skim">Skim</button>
           <button data-mk="oat">Oat</button>
           <button data-mk="almond">Almond</button>
-          <button data-mk="soy">Soy</button>
+          <button data-mk="soya">Soya</button>
         </div>
         <p class="why" id="milkWhy"></p>
       </div>
@@ -237,7 +237,7 @@ const MILK={
   skim:{c:3.97,rho:1.035,note:"Skim milk: mostly water, froths easily. Scalds above ~70C, boils at 100C."},
   oat:{c:3.90,rho:1.05,note:"Oat milk: heats smoothly to ~65C, but can split if the coffee is very hot or acidic."},
   almond:{c:4.00,rho:1.02,note:"Almond milk: thin and close to water; curdles easily when too hot or too acidic."},
-  soy:{c:3.90,rho:1.03,note:"Soy milk: protein-rich; tends to curdle with heat and acidity above ~70C."}
+  soya:{c:3.90,rho:1.03,note:"Soya milk: protein-rich; tends to curdle with heat and acidity above ~70C."}
 };
 const psatPa=t=>1000*0.61078*Math.exp(17.27*t/(t+237.3));
 const rhoVap=t=>psatPa(t)*P.M/(P.R*(t+273.15));
@@ -417,7 +417,8 @@ document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
 });
 $("milkTypeSeg").addEventListener("mouseleave",()=>{$("milkWhy").textContent="";});
 const bind=(id,vid,key,suf)=>{$(id).oninput=e=>{const v=+e.target.value;$(vid).innerHTML=v+suf;cfg[key]=v;running=false;playBtn(false);fresh();};};
-bind("vol","volV","vol"," mL"); bind("t0","t0V","t0","&deg;"); bind("tr","trV","tr","&deg;");
+bind("t0","t0V","t0","&deg;"); bind("tr","trV","tr","&deg;");
+$("vol").oninput=e=>{cfg.vol=+e.target.value;running=false;playBtn(false);fresh();};
 $("btnPlan").onclick=computePlan;
 
 // ---------- location, save, share (real web app features) ----------
@@ -427,7 +428,7 @@ function setRange(id,vid,val,suf){$(id).value=val;$(vid).innerHTML=val+suf;}
 function applyState(s){
   if(!s)return;
   cfg.material=s.material||cfg.material; pressBy("#matSeg","mat",cfg.material); $("matWhy").textContent=MAT_WHY[cfg.material];
-  cfg.vol=+s.vol||cfg.vol; setRange("vol","volV",cfg.vol," mL");
+  cfg.vol=+s.vol||cfg.vol; $("vol").value=cfg.vol;
   cfg.t0=+s.t0||cfg.t0; setRange("t0","t0V",cfg.t0,"&deg;");
   cfg.tr=+s.tr||cfg.tr; setRange("tr","trV",cfg.tr,"&deg;");
   cfg.milkType=s.milkType||cfg.milkType; pressBy("#milkTypeSeg","mk",cfg.milkType);
