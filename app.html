@@ -169,15 +169,11 @@
       </div>
       <div class="pop" id="popMilk" hidden>
         <div class="seg wrap" id="milkTypeSeg">
-          <button data-mk="whole" aria-pressed="true">Whole</button>
-          <button data-mk="skim">Skim</button>
-          <button data-mk="oat">Oat</button>
-          <button data-mk="almond">Almond</button>
-          <button data-mk="soy">Soy</button>
-        </div>
-        <div class="seg" id="milkSeg" style="margin-top:6px">
-          <button data-mt="5" aria-pressed="true">Fridge</button>
-          <button data-mt="20">Room</button>
+          <button data-mk="whole" aria-pressed="true">Whole milk</button>
+          <button data-mk="skim">Skim milk</button>
+          <button data-mk="oat">Oat milk</button>
+          <button data-mk="almond">Almond milk</button>
+          <button data-mk="soy">Soy milk</button>
         </div>
         <p class="why" id="milkWhy"></p>
       </div>
@@ -413,7 +409,6 @@ $("editCup").onclick=e=>{e.stopPropagation();togglePop("popCup");};
 $("editMilk").onclick=e=>{e.stopPropagation();togglePop("popMilk");};
 $("editVol").onclick=e=>{e.stopPropagation();togglePop("popVol");};
 document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")){$("popCup").hidden=true;$("popVol").hidden=true;$("popMilk").hidden=true;}});
-document.querySelectorAll("#milkSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#milkSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkTemp=+b.dataset.mt;});
 document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
   b.onclick=()=>{document.querySelectorAll("#milkTypeSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkType=b.dataset.mk;};
   b.addEventListener("mouseenter",()=>{$("milkWhy").textContent=MILK[b.dataset.mk].note;});
@@ -433,7 +428,6 @@ function applyState(s){
   cfg.vol=+s.vol||cfg.vol; setRange("vol","volV",cfg.vol," mL");
   cfg.t0=+s.t0||cfg.t0; setRange("t0","t0V",cfg.t0,"&deg;");
   cfg.tr=+s.tr||cfg.tr; setRange("tr","trV",cfg.tr,"&deg;");
-  cfg.milkTemp=+s.milkTemp||cfg.milkTemp; pressBy("#milkSeg","mt",cfg.milkTemp);
   cfg.milkType=s.milkType||cfg.milkType; pressBy("#milkTypeSeg","mk",cfg.milkType);
   if(s.gT)goal.T=+s.gT; if(s.gM)goal.m=+s.gM; updateHorizon(); updateLead();
   running=false; playBtn(false); fresh();
