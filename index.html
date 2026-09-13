@@ -123,7 +123,7 @@ const MILK={
 };
 function milkInfo(mk){const m=MILK[mk],cap=mk[0].toUpperCase()+mk.slice(1);
   return `<b>${cap} milk</b> &middot; ${m.desc}. Max <b>${m.maxHeat}°</b> before it ${m.breaks}.`;}
-const DRINK_LO=55, DRINK_HI=65, DUR=1800;
+const DRINK_LO=50, DRINK_HI=65, DUR=1800;
 const psatPa=t=>1000*0.61078*Math.exp(17.27*t/(t+237.3));
 const rhoVap=t=>psatPa(t)*P.M/(P.R*(t+273.15));
 function geom(v){const r=P.DIAM/2,aTop=Math.PI*r*r,vM3=v*1e-6,h=vM3/aTop;return{aTop,aSide:Math.PI*P.DIAM*h,mass:P.RHO*vM3};}
@@ -173,7 +173,7 @@ function drawChart(){
   x.fillStyle="rgba(60,58,54,.11)";x.fillRect(mL,Y(DRINK_HI),pw,Y(DRINK_LO)-Y(DRINK_HI));
   x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;
   x.fillStyle="#000";x.font="10px system-ui,sans-serif";x.textAlign="right";x.textBaseline="middle";
-  x.fillText("just right  "+DRINK_LO+"-"+DRINK_HI+"°",W-mR-4,(Y(DRINK_HI)+Y(DRINK_LO))/2);x.restore();
+  x.fillText("good to drink  "+DRINK_LO+"-"+DRINK_HI+"°",W-mR-4,(Y(DRINK_HI)+Y(DRINK_LO))/2);x.restore();
   // full cooling curve, faint
   x.strokeStyle="rgba(92,90,85,.42)";x.lineWidth=2;x.lineJoin="round";x.lineCap="round";x.beginPath();
   b.forEach((p,i)=>{const xx=X(p.t/60),yy=Y(p.T);i?x.lineTo(xx,yy):x.moveTo(xx,yy);});x.stroke();
@@ -202,7 +202,7 @@ function drawChart(){
 }
 function updateWin(){const w=drinkWindow();
   let s;
-  if(cfg.t0<DRINK_LO) s="Already cooler than the just-right range.";
+  if(cfg.t0<DRINK_LO) s="Already cooler than the good-to-drink range.";
   else if(w.ready==null) s="Still too hot after 30 minutes.";
   else if(w.ready===0) s="Ready to drink now"+(w.cold!=null?`, good until <b>${Math.round(w.cold/60)} min</b>.`:".");
   else s=`Perfect to drink in <b>${Math.round(w.ready/60)} min</b>`+(w.cold!=null?`, good until <b>${Math.round(w.cold/60)} min</b>.`:".");
