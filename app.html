@@ -31,7 +31,7 @@
   .cuphit{position:absolute; left:40%; top:40%; width:22%; height:25%; background:none; border:0; cursor:pointer; border-radius:50%}
   .cuphit:hover ~ .taphint{opacity:1}
   .cuphit:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
-  .taphint{position:absolute; left:50%; bottom:5%; transform:translateX(-50%); font-size:12px; color:var(--mid); background:rgba(249,248,246,.72); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); padding:7px 13px; border-radius:20px; pointer-events:none; box-shadow:0 4px 14px rgba(50,42,30,.14); opacity:.85; transition:opacity .2s}
+  .taphint{position:absolute; left:50%; bottom:24%; transform:translateX(-50%); font-size:12px; letter-spacing:.03em; color:var(--mid); pointer-events:none; text-shadow:0 1px 7px rgba(255,255,255,.75); opacity:.9; transition:opacity .2s}
   .overlay{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(60,55,48,.30); -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px); animation:fade .18s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .modal{position:relative; width:min(384px,94vw); max-height:90vh; overflow:auto}
@@ -51,8 +51,11 @@
   .readout .sub{font-size:12px; color:var(--mid); margin-top:7px}
   .edit{font:inherit; color:var(--ink); background:none; border:0; padding:0 0 1px; cursor:pointer; border-bottom:1px dashed var(--faint)}
   .edit:hover{border-bottom-color:var(--mid)}
-  .pop{position:absolute; right:18px; top:82px; z-index:5; width:230px; background:rgba(249,248,246,.92); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.6); border-radius:14px; box-shadow:0 14px 34px rgba(50,42,30,.2); padding:13px; line-height:1.3}
-  .poplabel{display:block; font-size:11px; color:var(--dim); margin-bottom:9px; font-family:var(--body)}
+  .pop{position:absolute; right:16px; top:78px; z-index:5; background:transparent; padding:0; line-height:1.3; text-align:right; width:min(320px,70vw)}
+  .pop .seg{gap:6px; justify-content:flex-end; flex-wrap:nowrap}
+  .pop .seg button{flex:0 1 auto; padding:8px 11px; font-size:12px; background:rgba(255,255,255,.78); box-shadow:0 3px 10px rgba(50,42,30,.14)}
+  .pop .why{margin-top:9px; font-size:11.5px; color:var(--mid); text-shadow:0 1px 7px rgba(255,255,255,.8)}
+  .poplabel{display:block; font-size:12px; color:var(--ink); margin-bottom:9px; font-family:var(--body); text-shadow:0 1px 7px rgba(255,255,255,.8)}
 
   .panel{width:100%; background:var(--panel); backdrop-filter:blur(20px) saturate(1.1); -webkit-backdrop-filter:blur(20px) saturate(1.1);
     border:1px solid rgba(255,255,255,.5); border-radius:20px; box-shadow:0 12px 34px rgba(50,42,30,.14); padding:22px; display:flex; flex-direction:column; justify-content:space-between; gap:18px}
@@ -141,11 +144,11 @@
       <canvas id="steam"></canvas>
       <div class="brandmark">Coffee<em> Physics</em></div>
       <div class="readout">
-        <div class="t"><span id="tempVal">87</span><sup>&deg;</sup></div>
-        <div class="sub"><span id="clockT">just poured</span> &middot; <button class="edit" id="editCup">ceramic</button> &middot; <button class="edit" id="editVol">250 mL</button></div>
+        <div class="t"><span id="tempVal">21</span><sup>&deg;</sup></div>
+        <div class="sub"><span id="ambLabel">room</span> &middot; <button class="edit" id="editCup">ceramic</button> &middot; <button class="edit" id="editVol">250 mL</button></div>
       </div>
       <div class="pop" id="popCup" hidden>
-        <div class="seg wrap" id="matSeg">
+        <div class="seg" id="matSeg">
           <button data-mat="ceramic" aria-pressed="true">Ceramic</button>
           <button data-mat="glass" aria-pressed="false">Glass</button>
           <button data-mat="metal" aria-pressed="false">Metal</button>
@@ -158,7 +161,7 @@
         <input type="range" id="vol" min="120" max="400" step="10" value="250">
       </div>
       <button class="cuphit" id="cupHit" aria-label="Open the cooling graph"></button>
-      <div class="taphint" id="tapHint">tap the cup for the graph</div>
+      <div class="taphint" id="tapHint">tap the cup</div>
     </div>
 
     <div class="overlay" id="overlay" hidden>
@@ -365,10 +368,7 @@ function setHint(){const h=$("hint");
   h.innerHTML=s+` <span style="color:var(--faint)">Press play to watch, or tap the chart to aim for your own temperature.</span>`;}
 function render(ms){
   drawScene(ms); drawChart();
-  const T=st?st.T:cfg.t0;
-  $("tempVal").textContent=Math.round(T); $("tempVal").parentElement.style.color=tempColor(T);
-  const s=Math.floor(st?st.time:0),mm=Math.floor(s/60),ss=String(s%60).padStart(2,"0");
-  $("clockT").textContent=(s===0?"just poured":`${mm}:${ss} elapsed`);
+  $("tempVal").textContent=Math.round(cfg.tr); $("tempVal").parentElement.style.color=tempColor(cfg.tr);
   $("editCup").textContent=cfg.material; $("editVol").textContent=(st?st.vol:cfg.vol)+" mL";
 }
 function playBtn(on){$("btnPlay").innerHTML=on?ICON_PAUSE:ICON_PLAY;$("btnPlay").setAttribute("aria-label",on?"Pause":"Play");}
@@ -407,7 +407,7 @@ function togglePop(id){const other=id==="popCup"?"popVol":"popCup";$(other).hidd
 $("editCup").onclick=e=>{e.stopPropagation();togglePop("popCup");};
 $("editVol").onclick=e=>{e.stopPropagation();togglePop("popVol");};
 document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")){$("popCup").hidden=true;$("popVol").hidden=true;}});
-document.querySelectorAll("#ambSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ambSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.tr=+b.dataset.amb;$("tr").value=cfg.tr;$("trV").innerHTML=cfg.tr+"&deg;";running=false;playBtn(false);fresh();});
+document.querySelectorAll("#ambSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ambSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.tr=+b.dataset.amb;$("tr").value=cfg.tr;$("trV").innerHTML=cfg.tr+"&deg;";$("ambLabel").textContent=(+b.dataset.amb<=8?"outside":"room");running=false;playBtn(false);fresh();});
 document.querySelectorAll("#milkSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#milkSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkTemp=+b.dataset.mt;});
 document.querySelectorAll("#milkTypeSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#milkTypeSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkType=b.dataset.mk;$("milkWhy").textContent=MILK[cfg.milkType].note;});
 const bind=(id,vid,key,suf)=>{$(id).oninput=e=>{const v=+e.target.value;$(vid).innerHTML=v+suf;cfg[key]=v;running=false;playBtn(false);fresh();};};
@@ -432,21 +432,23 @@ function applyState(s){
 }
 function toast(m){$("toolMsg").textContent=m;}
 
-$("btnLoc").onclick=()=>{
-  if(!navigator.geolocation){toast("Location is not available in this browser.");return;}
-  toast("Finding your weather...");
+function applyWeather(auto){
+  if(!navigator.geolocation){if(!auto)toast("Location is not available in this browser.");return;}
+  if(!auto)toast("Finding your weather...");
   navigator.geolocation.getCurrentPosition(async pos=>{
     try{
       const{latitude:la,longitude:lo}=pos.coords;
       const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,relative_humidity_2m`);
       const d=await r.json();const t=Math.round(d.current.temperature_2m),rh=d.current.relative_humidity_2m;
       cfg.tr=t; setRange("tr","trV",t,"&deg;"); P.RH=Math.max(0,Math.min(1,rh/100));
+      $("ambLabel").textContent="outside now";
       document.querySelectorAll("#ambSeg button").forEach(z=>z.setAttribute("aria-pressed",false));
       running=false;playBtn(false);fresh();
-      toast(`It is ${t}° and ${rh}% humidity where you are, applied. (Best for drinking outdoors.)`);
-    }catch(e){toast("Could not reach the weather service.");}
-  },()=>toast("Location permission was declined."));
-};
+      if(!auto)toast(`It is ${t}° and ${rh}% humidity where you are, applied.`);
+    }catch(e){if(!auto)toast("Could not reach the weather service.");}
+  },()=>{if(!auto)toast("Location permission was declined.");});
+}
+$("btnLoc").onclick=()=>applyWeather(false);
 
 const KEY="coffeephysics.drinks";
 function loadSaved(){try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch(e){return[];}}
@@ -479,6 +481,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeGraph();});
 playBtn(false); updateHorizon(); updateLead();
 try{const q=new URLSearchParams(location.search).get("d"); if(q){applyState(JSON.parse(atob(decodeURIComponent(q))));}}catch(e){}
 renderSaved(); fresh(); requestAnimationFrame(frame);
+applyWeather(true);   // auto: headline shows your local temperature
 </script>
 </body>
 </html>
