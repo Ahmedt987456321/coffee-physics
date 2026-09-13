@@ -352,7 +352,7 @@ function drawChart(){
   x.font="10px system-ui,sans-serif";x.fillStyle="#b3b0aa";x.textAlign="left";x.textBaseline="middle";
   x.fillText(ymax+"°",W-mR+5,Y(ymax)+4); x.fillText(Math.round(ymin)+"°",W-mR+5,Y(ymin)-4);
   x.textAlign="center";x.textBaseline="top";x.fillStyle="#b3b0aa";
-  x.fillText("now",X(0)+6,H-mB+4);x.fillText(tmax>=60?(tmax/60)+" hr":tmax+" min",X(tmax),H-mB+4);
+  x.fillText("now",X(0)+6,H-mB+4);x.fillText(fmtTime(Math.round(tmax)),X(tmax),H-mB+4);
 }
 
 function setHint(){const h=$("hint");
