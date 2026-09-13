@@ -171,8 +171,8 @@ function drawChart(){
   // the "just right" band is the answer the chart exists to give
   x.fillStyle="rgba(60,58,54,.11)";x.fillRect(mL,Y(DRINK_HI),pw,Y(DRINK_LO)-Y(DRINK_HI));
   x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;
-  x.fillStyle="#000";x.font="10px system-ui,sans-serif";x.textAlign="left";x.textBaseline="middle";
-  x.fillText("just right  "+DRINK_LO+"-"+DRINK_HI+"°",mL+4,(Y(DRINK_HI)+Y(DRINK_LO))/2);x.restore();
+  x.fillStyle="#000";x.font="10px system-ui,sans-serif";x.textAlign="right";x.textBaseline="middle";
+  x.fillText("just right  "+DRINK_LO+"-"+DRINK_HI+"°",W-mR-4,(Y(DRINK_HI)+Y(DRINK_LO))/2);x.restore();
   // full cooling curve, faint
   x.strokeStyle="rgba(92,90,85,.42)";x.lineWidth=2;x.lineJoin="round";x.lineCap="round";x.beginPath();
   b.forEach((p,i)=>{const xx=X(p.t/60),yy=Y(p.T);i?x.lineTo(xx,yy):x.moveTo(xx,yy);});x.stroke();
@@ -185,8 +185,8 @@ function drawChart(){
     x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;
     x.font="600 10px system-ui,sans-serif";x.fillStyle="#000";x.textBaseline="bottom";x.textAlign=align;
     x.fillText(label,align==="left"?xx+6:xx-6,yy-5);x.restore();};
-  mark(w.ready,DRINK_HI,"ready","left");
-  mark(w.cold,DRINK_LO,"cold","right");
+  if(w.ready>0) mark(w.ready,DRINK_HI,"ready","left");
+  if(cfg.t0>=DRINK_LO) mark(w.cold,DRINK_LO,"cold","right");
   // your coffee, right now: anchors the temperature axis
   {const xx=X(0),yy=Y(cfg.t0);
    x.beginPath();x.arc(xx,yy,3.4,0,7);x.fillStyle="#000";x.fill();x.strokeStyle="#fff";x.lineWidth=1.3;x.stroke();
@@ -200,8 +200,12 @@ function drawChart(){
   x.textAlign="right";x.fillText("30 min",X(tmax),H-mB+4);x.restore();
 }
 function updateWin(){const w=drinkWindow();
-  $("win").innerHTML = w.ready==null ? "Still too hot after 30 minutes."
-    : `Perfect to drink in <b>${Math.round(w.ready/60)} min</b>`+(w.cold!=null?`, good until <b>${Math.round(w.cold/60)} min</b>.`:".");}
+  let s;
+  if(cfg.t0<DRINK_LO) s="Already cooler than the just-right range.";
+  else if(w.ready==null) s="Still too hot after 30 minutes.";
+  else if(w.ready===0) s="Ready to drink now"+(w.cold!=null?`, good until <b>${Math.round(w.cold/60)} min</b>.`:".");
+  else s=`Perfect to drink in <b>${Math.round(w.ready/60)} min</b>`+(w.cold!=null?`, good until <b>${Math.round(w.cold/60)} min</b>.`:".");
+  $("win").innerHTML=s;}
 
 let graphOn=false;
 function render(ms){
