@@ -110,6 +110,8 @@
 
   footer{margin-top:16px; text-align:center; font-size:11px; color:var(--dim); line-height:1.6; text-shadow:0 1px 8px rgba(255,255,255,.4)}
   img{max-width:100%}
+  .costs{margin:0; font-size:12px; line-height:1.55; color:var(--mid)}
+  .costs b{color:var(--ink); font-weight:600}
 </style>
 </head>
 <body>
@@ -132,12 +134,7 @@
 
     <aside class="panel">
       <canvas id="chart"></canvas>
-      <div class="span" id="spanSeg">
-        <button data-h="1800" aria-pressed="true">30 min</button>
-        <button data-h="3600">1 hr</button>
-        <button data-h="7200">2 hr</button>
-      </div>
-      <p class="hint" id="hint">This is how your coffee will cool. <b>Press play</b> to watch it happen, or tap the chart to set a target time and temperature.</p>
+      <p class="hint" id="hint">This is how your coffee will cool. <b>Press play</b> to watch it happen, or drag on the chart to set when you want to drink it.</p>
 
       <div class="playrow">
         <button class="play" id="btnPlay" aria-label="Play"></button>
@@ -148,19 +145,7 @@
         <button class="reset" id="btnReset">Reset</button>
       </div>
 
-      <div class="acts">
-        <div class="lbl">Change it while it cools</div>
-        <div class="pills">
-          <button class="pill" id="btnMilk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3h8l-1 4H9L8 3zM9 7h6l1 12a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2L9 7z"/></svg>Milk</button>
-          <button class="pill" id="btnStir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="13" r="7"/><path d="M12 13V4m0 0l-2 2m2-2l2 2"/></svg>Stir</button>
-          <button class="pill" id="btnLid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h16M6 10a6 6 0 0 1 12 0M12 4v2"/></svg>Lid</button>
-        </div>
-      </div>
-
-      <div class="heat">
-        <div class="heatbar"><i id="hConv"></i><i id="hRad"></i><i id="hEvap"></i></div>
-        <div class="cap" id="heatCap">losing <b>0 W</b></div>
-      </div>
+      <p class="costs" id="costs"></p>
 
       <details class="adjust">
         <summary>Adjust the cup</summary>
@@ -201,7 +186,6 @@
         </div>
         <p class="why" id="milkWhy">Whole milk: rich and creamy. Best heated to about 65C; it skins and scalds above ~70C, and boils at 100C.</p>
 
-        <div class="speedrow">Speed <input type="range" id="warp" min="20" max="180" step="10" value="80"><span id="warpV">80&times;</span></div>
       </details>
 
       <div class="tools">
@@ -253,13 +237,23 @@ function mixMilk(T,vol,milkVol){const m=MILK[cfg.milkType];const cc=vol*4.186,cm
 let st,running=false,warp=80,lastMs=0;
 let history=[],events=[],planCurve=null,goal={T:64,m:15},chGeo=null;
 const CX=0.51, CY=0.47, RX=0.08, RY=0.024;  // cup anchors in the full photo
+function fmtTime(m){return m>=60?`${(m/60).toFixed(m%60?1:0)} hr`:`${m} min`;}
+function updateHorizon(){horizon=Math.min(250,Math.max(30,goal.m+10))*60; warp=Math.max(60,Math.min(600,horizon/25)); blCache=null;}
+function coldTime(lid){let T=cfg.t0,v=cfg.vol,t=0;const dt=15;while(t<horizon+3600){const f=flows(T,cfg.tr,v,lid,0);T+=-(f.total)/(f.mass*P.C)*dt;t+=dt;if(T<DRINK_LO)return t;}return null;}
+function updateCosts(){
+  const drop=cfg.t0-mixMilk(cfg.t0,cfg.vol,30).T;
+  const a=coldTime(false),b=coldTime(true),extra=(a!=null&&b!=null)?Math.round((b-a)/60):null;
+  const el=$("costs"); if(!el)return;
+  el.innerHTML=`A splash of cold milk drops it about <b>${Math.round(drop)}°</b> straight away.`+
+    (extra!=null&&extra>0?` A lid keeps it drinkable about <b>${extra} min</b> longer.`:"");
+}
 
 const $=id=>document.getElementById(id);
 function fresh(){
   blCache=null;
   st={T:cfg.t0,vol:cfg.vol,tRoom:cfg.tr,lidOn:false,stir:0,time:0,milk:0};
   history=[{t:0,T:st.T}]; events=[]; planCurve=null;
-  $("btnLid").setAttribute("aria-pressed",false); setHint();
+  setHint(); updateCosts();
 }
 function stepSim(dt){const inner=Math.max(1,Math.round(dt/1)),h=dt/inner;
   for(let i=0;i<inner;i++){const f=flows(st.T,st.tRoom,st.vol,st.lidOn,st.stir);
@@ -353,9 +347,6 @@ function render(ms){
   $("tempVal").textContent=Math.round(T); $("tempVal").parentElement.style.color=tempColor(T);
   const s=Math.floor(st?st.time:0),mm=Math.floor(s/60),ss=String(s%60).padStart(2,"0");
   $("clock").innerHTML=(s===0?"just poured":`${mm}:${ss} elapsed`)+` &middot; ${cfg.material} &middot; ${st?st.vol:cfg.vol} mL`+(st&&st.lidOn?" &middot; lid on":"");
-  const f=flows(T,st?st.tRoom:cfg.tr,st?st.vol:cfg.vol,st?st.lidOn:false,st?st.stir:0);
-  $("hConv").style.width=(f.conv/f.total*100)+"%";$("hRad").style.width=(f.rad/f.total*100)+"%";$("hEvap").style.width=(f.evap/f.total*100)+"%";
-  $("heatCap").innerHTML=`losing <b>${Math.round(f.total)} W</b> &middot; evaporation ${Math.round(f.evap/f.total*100)}%`;
 }
 function playBtn(on){$("btnPlay").innerHTML=on?ICON_PAUSE:ICON_PLAY;$("btnPlay").setAttribute("aria-label",on?"Pause":"Play");}
 function frame(ms){
@@ -364,10 +355,10 @@ function frame(ms){
   else lastMs=0;
   render(ms); requestAnimationFrame(frame);
 }
-function updateLead(){$("goalTV").innerHTML=goal.T+"&deg;";$("goalMV").innerHTML=goal.m+" min";}
+function updateLead(){$("goalTV").innerHTML=goal.T+"&deg;";$("goalMV").innerHTML=fmtTime(goal.m);}
 
 let dragging=false;
-function goalFrom(px,py){if(!chGeo)return;const t=(px-chGeo.mL)/chGeo.pw*chGeo.tmax;const v=chGeo.ymin+(1-(py-chGeo.mT)/chGeo.ph)*(chGeo.ymax-chGeo.ymin);goal.m=Math.max(1,Math.min(horizon/60,Math.round(t)));goal.T=Math.max(45,Math.min(80,Math.round(v)));planCurve=null;updateLead();}
+function goalFrom(px,py){if(!chGeo)return;const t=(px-chGeo.mL)/chGeo.pw*chGeo.tmax;const v=chGeo.ymin+(1-(py-chGeo.mT)/chGeo.ph)*(chGeo.ymax-chGeo.ymin);goal.m=Math.max(1,Math.min(240,Math.round(t)));goal.T=Math.max(45,Math.min(80,Math.round(v)));updateHorizon();planCurve=null;updateLead();}
 function near(px,py){if(!chGeo)return false;return Math.hypot(px-chGeo.X(goal.m),py-chGeo.Y(goal.T))<20;}
 chC.addEventListener("pointerdown",e=>{const r=chC.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;if(px<chGeo.mL-4||px>chGeo.X(chGeo.tmax)+6)return;dragging=true;chC.setPointerCapture(e.pointerId);chC.style.cursor="grabbing";goalFrom(px,py);});
 chC.addEventListener("pointermove",e=>{const r=chC.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;chC.style.cursor=dragging?"grabbing":"grab";if(dragging)goalFrom(px,py);});
@@ -383,20 +374,15 @@ function computePlan(){
     cand.push({d:`Add ${mv} mL milk ${w}, lid on`,a:{milkAt:mt,milkVol:mv,lid:true}});}));
   cand.forEach(c=>{const cv=simulatePlan(c.a),Tat=cv[Math.min(cv.length-1,Math.round(tgt/5))].T,cost=Math.abs(Tat-goal.T);if(!best||cost<best.cost)best={...c,cv,Tat,cost};});
   planCurve=best.cv;const ok=Math.abs(best.Tat-goal.T)<=2.5;
-  $("hint").innerHTML=`<b>${best.d}.</b> That reaches ${best.Tat.toFixed(0)}&deg; at ${goal.m} min`+(ok?".":" (as close as it gets).")+` The dashed line shows it.`;
+  $("hint").innerHTML=`<b>${best.d}.</b> That reaches ${best.Tat.toFixed(0)}&deg; at ${fmtTime(goal.m)}`+(ok?".":" (as close as it gets).")+` The dashed line shows it.`;
 }
 
 $("btnPlay").onclick=()=>{if(st.time>=horizon)fresh();running=!running;playBtn(running);setHint();};
 $("btnReset").onclick=()=>{running=false;fresh();playBtn(false);};
-$("btnMilk").onclick=()=>{const r=mixMilk(st.T,st.vol,30);st.T=r.T;st.vol=r.vol;st.milk+=30;events.push({t:st.time});};
-$("btnStir").onclick=()=>{st.stir=Math.min(2.5,st.stir+1.8);events.push({t:st.time});};
-$("btnLid").onclick=()=>{st.lidOn=!st.lidOn;$("btnLid").setAttribute("aria-pressed",st.lidOn);events.push({t:st.time});};
-$("warp").oninput=e=>{warp=+e.target.value;$("warpV").innerHTML=warp+"&times;";};
 document.querySelectorAll("#matSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#matSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.material=b.dataset.mat;$("matWhy").textContent=MAT_WHY[cfg.material];running=false;playBtn(false);fresh();});
 document.querySelectorAll("#ambSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#ambSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.tr=+b.dataset.amb;$("tr").value=cfg.tr;$("trV").innerHTML=cfg.tr+"&deg;";running=false;playBtn(false);fresh();});
 document.querySelectorAll("#milkSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#milkSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkTemp=+b.dataset.mt;});
 document.querySelectorAll("#milkTypeSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#milkTypeSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkType=b.dataset.mk;$("milkWhy").textContent=MILK[cfg.milkType].note;});
-document.querySelectorAll("#spanSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#spanSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);horizon=+b.dataset.h;if(goal.m>horizon/60)goal.m=horizon/60;updateLead();running=false;playBtn(false);fresh();});
 const bind=(id,vid,key,suf)=>{$(id).oninput=e=>{const v=+e.target.value;$(vid).innerHTML=v+suf;cfg[key]=v;running=false;playBtn(false);fresh();};};
 bind("vol","volV","vol"," mL"); bind("t0","t0V","t0","&deg;"); bind("tr","trV","tr","&deg;");
 $("tr").addEventListener("input",()=>document.querySelectorAll("#ambSeg button").forEach(z=>z.setAttribute("aria-pressed",false)));
@@ -414,8 +400,7 @@ function applyState(s){
   cfg.tr=+s.tr||cfg.tr; setRange("tr","trV",cfg.tr,"&deg;");
   cfg.milkTemp=+s.milkTemp||cfg.milkTemp; pressBy("#milkSeg","mt",cfg.milkTemp);
   cfg.milkType=s.milkType||cfg.milkType; pressBy("#milkTypeSeg","mk",cfg.milkType); $("milkWhy").textContent=MILK[cfg.milkType].note;
-  if(s.gT)goal.T=+s.gT; if(s.gM)goal.m=+s.gM; updateLead();
-  if(s.hz){horizon=+s.hz; pressBy("#spanSeg","h",horizon);}
+  if(s.gT)goal.T=+s.gT; if(s.gM)goal.m=+s.gM; updateHorizon(); updateLead();
   running=false; playBtn(false); fresh();
 }
 function toast(m){$("toolMsg").textContent=m;}
@@ -457,7 +442,7 @@ $("btnShare").onclick=async()=>{
   catch(e){toast(url);}
 };
 
-playBtn(false); updateLead();
+playBtn(false); updateHorizon(); updateLead();
 try{const q=new URLSearchParams(location.search).get("d"); if(q){applyState(JSON.parse(atob(decodeURIComponent(q))));}}catch(e){}
 renderSaved(); fresh(); requestAnimationFrame(frame);
 </script>
