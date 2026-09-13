@@ -58,7 +58,7 @@
   .pop .seg.fill{justify-content:space-between; width:100%}
   .pop .seg button{flex:0 1 auto; padding:6px 9px; font-size:12.5px; background:transparent; border:0; box-shadow:none; color:var(--mid); text-shadow:0 1px 7px rgba(255,255,255,.9); border-radius:8px}
   .pop .seg button[aria-pressed="true"]{color:var(--ink); font-weight:700; background:rgba(255,255,255,.4)}
-  .pop .why{margin-top:8px; font-size:11.5px; color:var(--ink); text-shadow:0 1px 8px rgba(255,255,255,.95),0 0 12px rgba(255,255,255,.7)}
+  .pop .why{margin-top:9px; font-size:11.5px; line-height:1.55; color:var(--ink); text-shadow:0 1px 8px rgba(255,255,255,.98),0 0 14px rgba(255,255,255,.85)}
   .poptitle{font-size:11px; color:var(--dim); margin-bottom:6px; text-shadow:0 1px 7px rgba(255,255,255,.9)}
   .pop.box{background:transparent; border:1px solid rgba(0,0,0,.13); border-radius:14px; box-shadow:none; padding:14px; width:min(240px,70vw)}
   .poplabel{display:block; font-size:12px; color:var(--ink); margin-bottom:9px; font-family:var(--body); text-shadow:0 1px 7px rgba(255,255,255,.85)}
@@ -231,14 +231,18 @@ const P={SIGMA:5.670374419e-8,R:8.314462,M:0.018015,C:4186,RHO:1000,L:2.26e6,EPS
 const MAT_H={ceramic:10,glass:12,metal:18,insulated:3.4};
 const MAT_WHY={ceramic:"Ceramic holds heat moderately, the everyday cup.",glass:"Glass loses heat a little faster than ceramic.",metal:"Bare metal conducts heat away fast, so it cools quickly.",insulated:"An insulated travel mug has a vacuum wall, so it stays hot far longer."};
 const DRINK_LO=55, DRINK_HI=65;   // the pleasant sipping range (degrees C)
-// milk types: c = specific heat (kJ/kg/K), rho = density (g/mL), plus a plain note
+// milk types: c = specific heat (kJ/kg/K), rho = density (g/mL), maxHeat = scald/curdle limit
 const MILK={
-  whole:{c:3.85,rho:1.03,note:"Whole milk: rich and creamy. Best heated to about 65C; it skins and scalds above ~70C, and boils at 100C."},
-  skim:{c:3.97,rho:1.035,note:"Skim milk: mostly water, froths easily. Scalds above ~70C, boils at 100C."},
-  oat:{c:3.90,rho:1.05,note:"Oat milk: heats smoothly to ~65C, but can split if the coffee is very hot or acidic."},
-  almond:{c:4.00,rho:1.02,note:"Almond milk: thin and close to water; curdles easily when too hot or too acidic."},
-  soya:{c:3.90,rho:1.03,note:"Soya milk: protein-rich; tends to curdle with heat and acidity above ~70C."}
+  whole:{c:3.85,rho:1.03,maxHeat:70,desc:"rich and creamy, ~3.5% fat",breaks:"skins and scalds"},
+  skim:{c:3.97,rho:1.035,maxHeat:70,desc:"fat-free, froths easily",breaks:"scalds"},
+  oat:{c:3.90,rho:1.05,maxHeat:65,desc:"smooth, plant-based",breaks:"can split"},
+  almond:{c:4.00,rho:1.02,maxHeat:65,desc:"thin, plant-based",breaks:"curdles easily"},
+  soya:{c:3.90,rho:1.03,maxHeat:70,desc:"protein-rich, plant-based",breaks:"curdles"}
 };
+function milkInfo(mk){const m=MILK[mk],cap=mk[0].toUpperCase()+mk.slice(1);
+  return `<b>${cap} milk</b> &middot; ${m.desc}.<br>`+
+    `Heat to <b>${m.maxHeat}°C</b> at most, then it ${m.breaks}.<br>`+
+    `Holds heat at <b>${m.c} kJ/kg·K</b>; it cools by radiation and evaporation much like water, since milk is mostly water.`;}
 const psatPa=t=>1000*0.61078*Math.exp(17.27*t/(t+237.3));
 const rhoVap=t=>psatPa(t)*P.M/(P.R*(t+273.15));
 let horizon=1800;
@@ -408,14 +412,14 @@ document.querySelectorAll("#matSeg button").forEach(b=>{
 $("matSeg").addEventListener("mouseleave",()=>{$("matWhy").textContent=MAT_WHY[cfg.material];});
 function togglePop(id){["popCup","popVol","popMilk"].forEach(p=>{if(p!==id)$(p).hidden=true;});$(id).hidden=!$(id).hidden;}
 $("editCup").onclick=e=>{e.stopPropagation();togglePop("popCup");};
-$("editMilk").onclick=e=>{e.stopPropagation();togglePop("popMilk");};
+$("editMilk").onclick=e=>{e.stopPropagation();togglePop("popMilk");$("milkWhy").innerHTML=milkInfo(cfg.milkType);};
 $("editVol").onclick=e=>{e.stopPropagation();togglePop("popVol");};
 document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")){$("popCup").hidden=true;$("popVol").hidden=true;$("popMilk").hidden=true;}});
 document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
-  b.onclick=()=>{document.querySelectorAll("#milkTypeSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkType=b.dataset.mk;};
-  b.addEventListener("mouseenter",()=>{$("milkWhy").textContent=MILK[b.dataset.mk].note;});
+  b.onclick=()=>{document.querySelectorAll("#milkTypeSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkType=b.dataset.mk;$("milkWhy").innerHTML=milkInfo(cfg.milkType);};
+  b.addEventListener("mouseenter",()=>{$("milkWhy").innerHTML=milkInfo(b.dataset.mk);});
 });
-$("milkTypeSeg").addEventListener("mouseleave",()=>{$("milkWhy").textContent="";});
+$("milkTypeSeg").addEventListener("mouseleave",()=>{$("milkWhy").innerHTML=milkInfo(cfg.milkType);});
 const bind=(id,vid,key,suf)=>{$(id).oninput=e=>{const v=+e.target.value;$(vid).innerHTML=v+suf;cfg[key]=v;running=false;playBtn(false);fresh();};};
 bind("t0","t0V","t0","&deg;"); bind("tr","trV","tr","&deg;");
 $("vol").oninput=e=>{cfg.vol=+e.target.value;running=false;playBtn(false);fresh();};
