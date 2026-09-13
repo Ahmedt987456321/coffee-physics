@@ -32,12 +32,15 @@
   .readout .sub{font-size:12px; color:var(--mid); margin-top:7px}
   .edit{font:inherit; color:var(--ink); background:none; border:0; padding:0 0 1px; cursor:pointer; border-bottom:1px dashed var(--faint)}
   .edit:hover{border-bottom-color:var(--mid)}
+  .editbig{font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; line-height:1; border-bottom:1px dashed var(--faint)}
+  .editbig:hover{border-bottom-color:var(--mid)}
 
   /* small transparent cooling graph, beneath the cup */
   .minigraph{position:absolute; left:50%; transform:translateX(-50%); bottom:130px; width:min(72%,380px); text-align:center}
   #chart{width:100%; height:100px; display:block}
   .miniwin{margin:6px 2px 0; font-size:12px; line-height:1.4; color:#000; text-align:center; text-shadow:0 1px 8px rgba(255,255,255,.98),0 0 14px rgba(255,255,255,.95)}
   .miniwin b{font-weight:600}
+  .minihead{margin:0 2px 3px; font-size:11px; color:#000; text-align:center; letter-spacing:.02em; text-shadow:0 1px 8px rgba(255,255,255,.98),0 0 14px rgba(255,255,255,.95)}
 
   .pop{position:absolute; right:16px; top:78px; z-index:5; background:transparent; padding:0; text-align:right; width:min(320px,74vw)}
   .seg{display:flex; gap:6px; justify-content:flex-end}
@@ -63,12 +66,13 @@
     <div class="brandmark">Coffee<em> Physics</em></div>
 
     <div class="minigraph" id="miniGraph" hidden>
+      <p class="minihead">how your coffee cools</p>
       <canvas id="chart"></canvas>
       <p class="miniwin" id="win"></p>
     </div>
 
     <div class="readout">
-      <div class="t"><span id="tempVal">87</span><sup>&deg;</sup></div>
+      <div class="t"><button class="editbig" id="editTemp" aria-label="Set the coffee temperature"><span id="tempVal">87</span><sup>&deg;</sup></button></div>
       <div class="sub"><button class="edit" id="editMilk">whole milk</button> &middot; <button class="edit" id="editCup">ceramic</button> &middot; <button class="edit" id="editVol">250 mL</button></div>
     </div>
 
@@ -80,6 +84,10 @@
         <button data-mat="insulated">Insulated</button>
       </div>
       <p class="why" id="matWhy">Ceramic holds heat moderately, the everyday cup.</p>
+    </div>
+    <div class="pop" id="popTemp" hidden>
+      <label class="poplabel">Temperature now</label>
+      <input type="range" id="temp" min="45" max="98" step="1" value="87">
     </div>
     <div class="pop" id="popVol" hidden>
       <label class="poplabel">Volume</label>
@@ -157,14 +165,14 @@ function drawSteam(ms){
 function drawChart(){
   const W=chR.width,H=chR.height,x=chX;x.clearRect(0,0,W,H);
   const mL=10,mR=10,mT=12,mB=20,pw=W-mL-mR,ph=H-mT-mB;
-  const tmax=DUR/60,ymin=40,ymax=92;
+  const tmax=DUR/60,ymin=40,ymax=Math.max(92,cfg.t0+3);
   const X=t=>mL+(t/tmax)*pw,Y=v=>mT+(1-(v-ymin)/(ymax-ymin))*ph;
   const b=baseline(),w=drinkWindow();
   // the "just right" band is the answer the chart exists to give
   x.fillStyle="rgba(60,58,54,.11)";x.fillRect(mL,Y(DRINK_HI),pw,Y(DRINK_LO)-Y(DRINK_HI));
   x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;
   x.fillStyle="#000";x.font="10px system-ui,sans-serif";x.textAlign="left";x.textBaseline="middle";
-  x.fillText("just right",mL+4,(Y(DRINK_HI)+Y(DRINK_LO))/2);x.restore();
+  x.fillText("just right  "+DRINK_LO+"-"+DRINK_HI+"°",mL+4,(Y(DRINK_HI)+Y(DRINK_LO))/2);x.restore();
   // full cooling curve, faint
   x.strokeStyle="rgba(92,90,85,.42)";x.lineWidth=2;x.lineJoin="round";x.lineCap="round";x.beginPath();
   b.forEach((p,i)=>{const xx=X(p.t/60),yy=Y(p.T);i?x.lineTo(xx,yy):x.moveTo(xx,yy);});x.stroke();
@@ -179,6 +187,12 @@ function drawChart(){
     x.fillText(label,align==="left"?xx+6:xx-6,yy-5);x.restore();};
   mark(w.ready,DRINK_HI,"ready","left");
   mark(w.cold,DRINK_LO,"cold","right");
+  // your coffee, right now: anchors the temperature axis
+  {const xx=X(0),yy=Y(cfg.t0);
+   x.beginPath();x.arc(xx,yy,3.4,0,7);x.fillStyle="#000";x.fill();x.strokeStyle="#fff";x.lineWidth=1.3;x.stroke();
+   x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;
+   x.font="600 10px system-ui,sans-serif";x.fillStyle="#000";x.textAlign="left";x.textBaseline="bottom";
+   x.fillText(Math.round(cfg.t0)+"°",xx+6,yy-5);x.restore();}
   // time axis
   x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;
   x.fillStyle="#000";x.font="10px system-ui,sans-serif";x.textBaseline="top";
@@ -199,11 +213,12 @@ function render(ms){
 }
 
 // pickers
-function togglePop(id){["popCup","popVol","popMilk"].forEach(p=>{if(p!==id)$(p).hidden=true;});$(id).hidden=!$(id).hidden;}
+function togglePop(id){["popCup","popVol","popMilk","popTemp"].forEach(p=>{if(p!==id)$(p).hidden=true;});$(id).hidden=!$(id).hidden;}
+$("editTemp").onclick=e=>{e.stopPropagation();$("temp").value=Math.round(cfg.t0);togglePop("popTemp");};
 $("editCup").onclick=e=>{e.stopPropagation();togglePop("popCup");};
 $("editVol").onclick=e=>{e.stopPropagation();togglePop("popVol");};
 $("editMilk").onclick=e=>{e.stopPropagation();togglePop("popMilk");$("milkWhy").innerHTML=milkInfo(cfg.milkType);};
-document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")){$("popCup").hidden=true;$("popVol").hidden=true;$("popMilk").hidden=true;}});
+document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")&&!e.target.closest(".editbig")){$("popCup").hidden=true;$("popVol").hidden=true;$("popMilk").hidden=true;$("popTemp").hidden=true;}});
 
 document.querySelectorAll("#matSeg button").forEach(b=>{
   b.onclick=()=>{document.querySelectorAll("#matSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.material=b.dataset.mat;$("matWhy").textContent=MAT_WHY[cfg.material];$("popCup").hidden=true;refresh();updateWin();};
@@ -215,6 +230,7 @@ document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
   b.addEventListener("mouseenter",()=>{$("milkWhy").innerHTML=milkInfo(b.dataset.mk);});
 });
 $("milkTypeSeg").addEventListener("mouseleave",()=>{$("milkWhy").innerHTML=milkInfo(cfg.milkType);});
+$("temp").oninput=e=>{cfg.t0=+e.target.value;refresh();updateWin();};
 $("vol").oninput=e=>{cfg.vol=+e.target.value;refresh();updateWin();};
 
 // tap the cup -> small graph
