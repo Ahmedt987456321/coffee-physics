@@ -40,7 +40,7 @@
   .modal::-webkit-scrollbar{width:0}
   .close{position:absolute; top:10px; right:12px; z-index:2; width:30px; height:30px; border:0; border-radius:50%; background:rgba(255,255,255,.55); color:var(--mid); font-size:19px; line-height:1; cursor:pointer}
   .close:hover{background:rgba(255,255,255,.95); color:var(--ink)}
-  .modal.panel{justify-content:flex-start; gap:15px; padding-top:30px}
+  .modal.panel{justify-content:flex-start; gap:15px; padding-top:30px; background:rgba(245,244,241,.975); backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:0 24px 60px rgba(50,42,30,.28)}
 
   .frame{position:relative; line-height:0}
   .frame img{display:block; max-height:84vh; width:auto; max-width:100%; border-radius:20px; box-shadow:0 22px 54px rgba(50,42,30,.22)}
@@ -137,6 +137,8 @@
   [hidden]{display:none!important}
   .costs{margin:0; font-size:12px; line-height:1.55; color:var(--mid)}
   .costs b{color:var(--ink); font-weight:600}
+  .mtitle{margin:0 0 12px; font-size:14px; font-weight:600; color:var(--ink)}
+  .legend{margin:9px 0 0; font-size:11.5px; line-height:1.5; color:var(--dim)}
 </style>
 </head>
 <body>
@@ -150,7 +152,7 @@
       <div class="brandmark">Coffee<em> Physics</em></div>
       <div class="readout">
         <div class="t"><span id="tempVal">87</span><sup>&deg;</sup></div>
-        <div class="sub"><span id="ambLabel">room</span> &middot; <button class="edit" id="editCup">ceramic</button> &middot; <button class="edit" id="editVol">250 mL</button></div>
+        <div class="sub"><button class="edit" id="editMilk">whole milk</button> &middot; <button class="edit" id="editCup">ceramic</button> &middot; <button class="edit" id="editVol">250 mL</button></div>
       </div>
       <div class="pop" id="popCup" hidden>
         <div class="seg" id="matSeg">
@@ -165,6 +167,20 @@
         <label class="poplabel">Volume <span id="volV">250 mL</span></label>
         <input type="range" id="vol" min="120" max="400" step="10" value="250">
       </div>
+      <div class="pop" id="popMilk" hidden>
+        <div class="seg wrap" id="milkTypeSeg">
+          <button data-mk="whole" aria-pressed="true">Whole</button>
+          <button data-mk="skim">Skim</button>
+          <button data-mk="oat">Oat</button>
+          <button data-mk="almond">Almond</button>
+          <button data-mk="soy">Soy</button>
+        </div>
+        <div class="seg" id="milkSeg" style="margin-top:6px">
+          <button data-mt="5" aria-pressed="true">Fridge</button>
+          <button data-mt="20">Room</button>
+        </div>
+        <p class="why" id="milkWhy"></p>
+      </div>
       <button class="cuphit" id="cupHit" aria-label="Open the cooling graph"></button>
       <div class="taphint" id="tapHint">tap the cup</div>
     </div>
@@ -172,8 +188,10 @@
     <div class="overlay" id="overlay" hidden>
       <div class="modal panel">
         <button class="close" id="closeModal" aria-label="Close">&times;</button>
+      <h3 class="mtitle">How your coffee cools</h3>
       <canvas id="chart"></canvas>
-      <p class="hint" id="hint">This is how your coffee will cool. <b>Press play</b> to watch it happen, or drag on the chart to set when you want to drink it.</p>
+      <p class="legend">The line is your coffee cooling over time. The shaded band is when it is just right to drink. Drag the dot to aim for a moment.</p>
+      <p class="hint" id="hint"></p>
 
       <div class="playrow">
         <button class="play" id="btnPlay" aria-label="Play"></button>
@@ -193,19 +211,6 @@
           <div class="f"><label>poured at <span id="t0V">87&deg;</span></label><input type="range" id="t0" min="60" max="95" step="1" value="87"></div>
           <div class="f"><label>room <span id="trV">21&deg;</span></label><input type="range" id="tr" min="2" max="30" step="1" value="21"></div>
         </div>
-        <label class="mini">milk</label>
-        <div class="seg wrap" id="milkTypeSeg">
-          <button data-mk="whole" aria-pressed="true">Whole</button>
-          <button data-mk="skim">Skim</button>
-          <button data-mk="oat">Oat</button>
-          <button data-mk="almond">Almond</button>
-          <button data-mk="soy">Soy</button>
-        </div>
-        <div class="seg" id="milkSeg" style="margin-top:8px">
-          <button data-mt="5" aria-pressed="true">Fridge</button>
-          <button data-mt="20">Room</button>
-        </div>
-        <p class="why" id="milkWhy"></p>
       </details>
 
       <div class="tools">
@@ -365,7 +370,7 @@ function setHint(){const h=$("hint");
 function render(ms){
   drawScene(ms); drawChart();
   const T=st?st.T:cfg.t0; $("tempVal").textContent=Math.round(T); $("tempVal").parentElement.style.color=tempColor(T);
-  $("editCup").textContent=cfg.material; $("editVol").textContent=(st?st.vol:cfg.vol)+" mL";
+  $("editCup").textContent=cfg.material; $("editVol").textContent=(st?st.vol:cfg.vol)+" mL"; $("editMilk").textContent=cfg.milkType+" milk";
 }
 function playBtn(on){$("btnPlay").innerHTML=on?ICON_PAUSE:ICON_PLAY;$("btnPlay").setAttribute("aria-label",on?"Pause":"Play");}
 function frame(ms){
@@ -403,10 +408,11 @@ document.querySelectorAll("#matSeg button").forEach(b=>{
   b.addEventListener("mouseenter",()=>{$("matWhy").textContent=MAT_WHY[b.dataset.mat];});
 });
 $("matSeg").addEventListener("mouseleave",()=>{$("matWhy").textContent=MAT_WHY[cfg.material];});
-function togglePop(id){const other=id==="popCup"?"popVol":"popCup";$(other).hidden=true;$(id).hidden=!$(id).hidden;}
+function togglePop(id){["popCup","popVol","popMilk"].forEach(p=>{if(p!==id)$(p).hidden=true;});$(id).hidden=!$(id).hidden;}
 $("editCup").onclick=e=>{e.stopPropagation();togglePop("popCup");};
+$("editMilk").onclick=e=>{e.stopPropagation();togglePop("popMilk");};
 $("editVol").onclick=e=>{e.stopPropagation();togglePop("popVol");};
-document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")){$("popCup").hidden=true;$("popVol").hidden=true;}});
+document.addEventListener("click",e=>{if(!e.target.closest(".pop")&&!e.target.closest(".edit")){$("popCup").hidden=true;$("popVol").hidden=true;$("popMilk").hidden=true;}});
 document.querySelectorAll("#milkSeg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#milkSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkTemp=+b.dataset.mt;});
 document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
   b.onclick=()=>{document.querySelectorAll("#milkTypeSeg button").forEach(z=>z.setAttribute("aria-pressed",false));b.setAttribute("aria-pressed",true);cfg.milkType=b.dataset.mk;};
@@ -415,7 +421,6 @@ document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
 $("milkTypeSeg").addEventListener("mouseleave",()=>{$("milkWhy").textContent="";});
 const bind=(id,vid,key,suf)=>{$(id).oninput=e=>{const v=+e.target.value;$(vid).innerHTML=v+suf;cfg[key]=v;running=false;playBtn(false);fresh();};};
 bind("vol","volV","vol"," mL"); bind("t0","t0V","t0","&deg;"); bind("tr","trV","tr","&deg;");
-$("tr").addEventListener("input",()=>{$("ambLabel").textContent="room";});
 $("btnPlan").onclick=computePlan;
 
 // ---------- location, save, share (real web app features) ----------
@@ -444,8 +449,6 @@ function applyWeather(auto){
       const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,relative_humidity_2m`);
       const d=await r.json();const t=Math.round(d.current.temperature_2m),rh=d.current.relative_humidity_2m;
       cfg.tr=t; setRange("tr","trV",t,"&deg;"); P.RH=Math.max(0,Math.min(1,rh/100));
-      try{const g=await(await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=en`)).json();$("ambLabel").textContent=(g.city||g.locality||g.principalSubdivision||"outside");}catch(_){$("ambLabel").textContent="outside";}
-      document.querySelectorAll("#ambSeg button").forEach(z=>z.setAttribute("aria-pressed",false));
       running=false;playBtn(false);fresh();
       if(!auto)toast(`It is ${t}° and ${rh}% humidity where you are, applied.`);
     }catch(e){if(!auto)toast("Could not reach the weather service.");}
