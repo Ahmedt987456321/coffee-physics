@@ -95,11 +95,11 @@
       <p class="why" id="matWhy">Ceramic holds heat moderately, the everyday cup.</p>
     </div>
     <div class="pop" id="popTemp" hidden>
-      <label class="poplabel">Temperature now</label>
+      <label class="poplabel" id="lblTemp">Temperature now</label>
       <input type="range" id="temp" min="45" max="80" step="1" value="78">
     </div>
     <div class="pop" id="popPref" hidden>
-      <label class="poplabel">Temperature you like</label>
+      <label class="poplabel" id="lblPref">Temperature you like</label>
       <input type="range" id="pref" min="30" max="70" step="1" value="60">
     </div>
     <div class="pop" id="popVol" hidden>
@@ -135,7 +135,8 @@ const MILK={
 };
 function milkInfo(mk){const m=MILK[mk],cap=mk[0].toUpperCase()+mk.slice(1);
   return `<b>${cap} milk</b> &middot; ${m.desc}. Max <b>${m.maxHeat}°</b> before it ${m.breaks}.`;}
-const DUR=1800;
+const DUR=7200;
+function fmtTime(m){m=Math.round(m);return m<60?`${m} min`:(m%60===0?`${m/60} h`:`${Math.floor(m/60)}h ${m%60}m`);}
 const psatPa=t=>1000*0.61078*Math.exp(17.27*t/(t+237.3));
 const rhoVap=t=>psatPa(t)*P.M/(P.R*(t+273.15));
 function geom(v){const r=P.DIAM/2,aTop=Math.PI*r*r,vM3=v*1e-6,h=vM3/aTop;return{aTop,aSide:Math.PI*P.DIAM*h,mass:P.RHO*vM3};}
@@ -178,9 +179,11 @@ function drawSteam(ms){
 function drawChart(){
   const W=chR.width,H=chR.height,x=chX;x.clearRect(0,0,W,H);
   const mL=10,mR=10,mT=12,mB=20,pw=W-mL-mR,ph=H-mT-mB;
-  const tmax=DUR/60,ymin=Math.min(40,cfg.pref-4),ymax=Math.max(84,cfg.t0+3);
+  const b=baseline(),rt=reachTime(cfg.pref);
+  // stretch the time axis to wherever the chosen temperature actually is
+  const tmax=rt!=null ? Math.max(15,Math.min(120,Math.ceil((rt/60)*1.4))) : Math.min(120,DUR/60);
+  const ymin=Math.min(40,cfg.pref-5),ymax=Math.max(84,cfg.t0+3);
   const X=t=>mL+(t/tmax)*pw,Y=v=>mT+(1-(v-ymin)/(ymax-ymin))*ph;
-  const b=baseline();
   const glow=fn=>{x.save();x.shadowColor="rgba(255,255,255,.95)";x.shadowBlur=4;fn();x.restore();};
   // the temperature the person likes: a line across the chart
   const py=Y(cfg.pref);
@@ -190,26 +193,25 @@ function drawChart(){
     x.fillText("you like it at "+Math.round(cfg.pref)+"°",W-mR-2,py-3);});
   // the cooling curve = the physics
   x.strokeStyle="#3b3a37";x.lineWidth=2.4;x.lineJoin="round";x.lineCap="round";x.beginPath();
-  b.forEach((p,i)=>{const xx=X(p.t/60),yy=Y(p.T);i?x.lineTo(xx,yy):x.moveTo(xx,yy);});x.stroke();
+  let on=false;for(const p of b){const m=p.t/60;if(m>tmax)break;const xx=X(m),yy=Y(p.T);on?x.lineTo(xx,yy):x.moveTo(xx,yy);on=true;}x.stroke();
   // current temperature, now (anchors the axis)
   {const xx=X(0),yy=Y(cfg.t0);
    x.beginPath();x.arc(xx,yy,3.4,0,7);x.fillStyle="#000";x.fill();x.strokeStyle="#fff";x.lineWidth=1.3;x.stroke();
    glow(()=>{x.font="600 10px system-ui,sans-serif";x.fillStyle="#000";x.textAlign="left";x.textBaseline="bottom";
      x.fillText(Math.round(cfg.t0)+"°",xx+6,yy-5);});}
   // where the curve reaches the temperature they like
-  const rt=reachTime(cfg.pref);
   if(rt!=null&&rt>0){const xx=X(rt/60);
    x.beginPath();x.arc(xx,py,3.9,0,7);x.fillStyle="#000";x.fill();x.strokeStyle="#fff";x.lineWidth=1.4;x.stroke();}
   // time axis
   glow(()=>{x.fillStyle="#000";x.font="10px system-ui,sans-serif";x.textBaseline="top";
     x.textAlign="left";x.fillText("now",X(0),H-mB+4);
-    x.textAlign="right";x.fillText("30 min",X(tmax),H-mB+4);});
+    x.textAlign="right";x.fillText(fmtTime(tmax),X(tmax),H-mB+4);});
 }
-function updateWin(){const rt=reachTime(cfg.pref),pv=Math.round(cfg.pref);
+function updateWin(){const pv=Math.round(cfg.pref);
   let s;
   if(cfg.t0<=cfg.pref) s=`Already at or below your <b>${pv}°</b>.`;
-  else if(rt==null) s=`Will not cool to <b>${pv}°</b> in this room.`;
-  else s=`Reaches your <b>${pv}°</b> in about <b>${Math.round(rt/60)} min</b>.`;
+  else if(cfg.pref<=cfg.tr) s=`Will not cool to <b>${pv}°</b>, the room is ${Math.round(cfg.tr)}°.`;
+  else {const rt=reachTime(cfg.pref); s = rt==null ? `Reaches <b>${pv}°</b> after a long time.` : `Reaches your <b>${pv}°</b> in about <b>${fmtTime(rt/60)}</b>.`;}
   $("win").innerHTML=s;}
 
 let graphOn=false;
@@ -223,8 +225,10 @@ function render(ms){
 
 // pickers
 function togglePop(id){["popCup","popVol","popMilk","popTemp","popPref"].forEach(p=>{if(p!==id)$(p).hidden=true;});$(id).hidden=!$(id).hidden;}
-$("editTemp").onclick=e=>{e.stopPropagation();$("temp").value=Math.round(cfg.t0);togglePop("popTemp");};
-$("editPref").onclick=e=>{e.stopPropagation();$("pref").value=Math.round(cfg.pref);togglePop("popPref");};
+const lblT=()=>$("lblTemp").textContent="Temperature now  "+Math.round(cfg.t0)+"°";
+const lblP=()=>$("lblPref").textContent="Temperature you like  "+Math.round(cfg.pref)+"°";
+$("editTemp").onclick=e=>{e.stopPropagation();$("temp").value=Math.round(cfg.t0);lblT();togglePop("popTemp");};
+$("editPref").onclick=e=>{e.stopPropagation();$("pref").value=Math.round(cfg.pref);lblP();togglePop("popPref");};
 $("editCup").onclick=e=>{e.stopPropagation();togglePop("popCup");};
 $("editVol").onclick=e=>{e.stopPropagation();togglePop("popVol");};
 $("editMilk").onclick=e=>{e.stopPropagation();togglePop("popMilk");$("milkWhy").innerHTML=milkInfo(cfg.milkType);};
@@ -240,9 +244,9 @@ document.querySelectorAll("#milkTypeSeg button").forEach(b=>{
   b.addEventListener("mouseenter",()=>{$("milkWhy").innerHTML=milkInfo(b.dataset.mk);});
 });
 $("milkTypeSeg").addEventListener("mouseleave",()=>{$("milkWhy").innerHTML=milkInfo(cfg.milkType);});
-$("temp").oninput=e=>{cfg.t0=+e.target.value;refresh();updateWin();};
+$("temp").oninput=e=>{cfg.t0=+e.target.value;lblT();refresh();updateWin();};
 $("vol").oninput=e=>{cfg.vol=+e.target.value;refresh();updateWin();};
-$("pref").oninput=e=>{cfg.pref=+e.target.value;updateWin();};
+$("pref").oninput=e=>{cfg.pref=+e.target.value;lblP();updateWin();};
 
 // tap the cup -> small graph
 $("cupHit").onclick=()=>{graphOn=!graphOn;$("miniGraph").hidden=!graphOn;$("tapHint").hidden=graphOn;if(graphOn){refit();updateWin();}};
